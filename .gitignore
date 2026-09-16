@@ -31,3 +31,6 @@ Thumbs.db
 
 # Dart package (not app) — don't pin the lock
 pubspec.lock
+
+# ...but the TS app's crypto/frame golden vectors ARE a committed test asset
+!app/src/bridge/__fixtures__/fixtures.json

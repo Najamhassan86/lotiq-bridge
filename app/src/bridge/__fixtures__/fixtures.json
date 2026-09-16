@@ -1,0 +1,97 @@
+{
+  "inputs": {
+    "nonce": "0123456789ABCDEF0123456789ABCDEF",
+    "username": "admin",
+    "password": "lotiq2026aa"
+  },
+  "step1_nonce_request": {
+    "cmd_id": 1,
+    "message_class": "1465",
+    "mess_id": 1,
+    "header_hex": "f0debc0a0100000000000000fa01000012dc1465",
+    "header_len": 20,
+    "note": "20-byte header, zero body. Camera replies with <nonce> in BC-encrypted XML."
+  },
+  "step2_derivation": {
+    "user_hash": "EF5530A395BA606CB498F06D1FF3F13",
+    "user_hash_len": 31,
+    "password_hash": "75B10A2DBBF501D474AAA1827E1C53A",
+    "password_hash_len": 31,
+    "aes_key_ascii": "A38AD0E025128C82",
+    "aes_key_hex": "41333841443045303235313238433832",
+    "note": "hashes are 31 chars. aes_key is the ASCII BYTES of a 16-char string."
+  },
+  "step3_login_frame": {
+    "cmd_id": 1,
+    "message_class": "1464",
+    "encryption": "BC-XOR (NOT AES)",
+    "ch_id": 250,
+    "plaintext_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<body>\n<LoginUser version=\"1.1\">\n<userName>EF5530A395BA606CB498F06D1FF3F13</userName>\n<password>75B10A2DBBF501D474AAA1827E1C53A</password>\n<userVer>1</userVer>\n</LoginUser>\n<LoginNet version=\"1.1\">\n<type>LAN</type>\n<udpPort>0</udpPort>\n</LoginNet>\n</body>\n",
+    "plaintext_len": 296,
+    "header_hex": "f0debc0a0100000028010000fa0200000000146400000000",
+    "encrypted_body_hex": "fa8ed8feee2593b2b4c2c9fcec38c7e6e88182b3e76b86b8a2d8cef4bf27b083809c98b1a23adbddfad3cff7fb3befeb8adec7faec5096b2b491d6f6f0768cb8a88c82a2ac34c7e9cc8dd5e0e777abb6abd49ed6c430d0e4f6f093aab747a4e1f687e3d1b63cdd91f687e4a2c443d691f7829cbcf77680a588d0cdf6bc0fd9a7a7c2d3e4ed7781e9f184e2a2b244d79384f3e6a6b234a1e3f185e1d2c334dde5f1f491d0b736a4ebe9c1c1e0f1728aa5a28faaaff77680a590d4d2adb339caa2b5d4d2c5e777dbddfa9eecfce56c8b82b5d4d2ad8839a9b8a1d8cedde771c5a1a3c3d3faed6bd8f5f79f91b1bc0fd9a3bfc1c5adce44abebe9c5d9e3e73befebb3d5d0c3ed7791e9f68d8fe6e675b5b8b4c59e99be2aa9b8a1d8cedde771dbddfa9ec2fce67cdbdd",
+    "full_frame_hex": "f0debc0a0100000028010000fa0200000000146400000000fa8ed8feee2593b2b4c2c9fcec38c7e6e88182b3e76b86b8a2d8cef4bf27b083809c98b1a23adbddfad3cff7fb3befeb8adec7faec5096b2b491d6f6f0768cb8a88c82a2ac34c7e9cc8dd5e0e777abb6abd49ed6c430d0e4f6f093aab747a4e1f687e3d1b63cdd91f687e4a2c443d691f7829cbcf77680a588d0cdf6bc0fd9a7a7c2d3e4ed7781e9f184e2a2b244d79384f3e6a6b234a1e3f185e1d2c334dde5f1f491d0b736a4ebe9c1c1e0f1728aa5a28faaaff77680a590d4d2adb339caa2b5d4d2c5e777dbddfa9eecfce56c8b82b5d4d2ad8839a9b8a1d8cedde771c5a1a3c3d3faed6bd8f5f79f91b1bc0fd9a3bfc1c5adce44abebe9c5d9e3e73befebb3d5d0c3ed7791e9f68d8fe6e675b5b8b4c59e99be2aa9b8a1d8cedde771dbddfa9ec2fce67cdbdd",
+    "note": "Login body uses the XOR cipher with offset=ch_id=250. AES is NOT used yet."
+  },
+  "step4_enable_http": {
+    "cmd_id": 36,
+    "message_class": "1464",
+    "encryption": "AES-CFB128",
+    "plaintext_xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<body><HttpPort version=\"1.1\"><enable>1</enable></HttpPort></body>",
+    "plaintext_len": 106,
+    "header_hex": "f0debc0a240000006a000000fa0300000000146400000000",
+    "encrypted_body_hex": "a8c6bb60d1bc473214f7a5c635ad47189a20894016eda3fbe752b67f38a2befbf217fa77414170f941d3437a060fbd242fb5ca2f9f2af902a1218cf6f37ab293bad34bb4010c6527c19191868ca847856eef64cc01950bed26443f5e374833db8587aa032f591b7eba4b",
+    "full_frame_hex": "f0debc0a240000006a000000fa0300000000146400000000a8c6bb60d1bc473214f7a5c635ad47189a20894016eda3fbe752b67f38a2befbf217fa77414170f941d3437a060fbd242fb5ca2f9f2af902a1218cf6f37ab293bad34bb4010c6527c19191868ca847856eef64cc01950bed26443f5e374833db8587aa032f591b7eba4b"
+  },
+  "step5_get_ports": {
+    "cmd_id": 37,
+    "message_class": "1464",
+    "header_hex": "f0debc0a2500000000000000fa0400000000146400000000",
+    "note": "Empty body. Response is AES-CFB128 encrypted XML listing all port states."
+  },
+  "unit_vectors": {
+    "md5_str_modern": [
+      {
+        "in": "admin0123456789ABCDEF0123456789ABCDEF",
+        "out": "EF5530A395BA606CB498F06D1FF3F13"
+      },
+      {
+        "in": "",
+        "out": "D41D8CD98F00B204E9800998ECF8427"
+      },
+      {
+        "in": "a",
+        "out": "0CC175B9C0F1B6A831C399E26977266"
+      }
+    ],
+    "bc_xor": [
+      {
+        "plain": "<?xml",
+        "offset": 250,
+        "out_hex": "fa8ed8feee"
+      },
+      {
+        "plain": "AAAAAAAAAAAAAAAA",
+        "offset": 250,
+        "out_hex": "87f0e1d2c344a49687f0e1d2c344a496"
+      },
+      {
+        "plain": "AAAAAAAAAAAAAAAA",
+        "offset": 0,
+        "out_hex": "5e6c7d0a1b2839be5e6c7d0a1b2839be"
+      }
+    ],
+    "aes_cfb128": [
+      {
+        "plain": "0123456789abcdef",
+        "key_ascii": "A38AD0E025128C82",
+        "out_hex": "a4c8f13e89a907605ebdadcb38f4004f"
+      },
+      {
+        "plain": "short",
+        "key_ascii": "A38AD0E025128C82",
+        "out_hex": "e791ac7fc9"
+      }
+    ]
+  }
+}
