@@ -28,3 +28,6 @@ cameras.csv
 # OS
 .DS_Store
 Thumbs.db
+
+# Dart package (not app) — don't pin the lock
+pubspec.lock

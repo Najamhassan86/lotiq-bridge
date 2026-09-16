@@ -1,0 +1,7 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  exclude:
+    # Vendored crypto/protocol core (from kunal-lotiq/lotiq-installer) — validated by conformance
+    # tests in its origin repo, kept close to its proven form; don't re-lint it here.
+    - lib/src/vendor/**

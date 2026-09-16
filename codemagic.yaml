@@ -1,0 +1,37 @@
+# Codemagic CI for the LotIQ bridge.
+#
+# Today: validate the pure-Dart package (analyze + test) on every push, so a broken port of the
+# provisioning logic fails in CI, not on someone's phone. When the Flutter app (dart/lotiq_bridge_app)
+# lands, add an `ios-testflight` workflow modelled on kunal-lotiq/lotiq-installer's codemagic.yaml
+# (App Store Connect key, distribution cert + profile, `xcode-project use-profiles`, `flutter build
+# ipa`, TestFlight publish).
+workflows:
+  dart-package:
+    name: lotiq_bridge — Dart package (analyze + test)
+    instance_type: linux_x2
+    max_build_duration: 20
+    environment:
+      flutter: stable # provides the Dart SDK
+    triggering:
+      events:
+        - push
+        - pull_request
+    scripts:
+      - name: dart pub get
+        script: cd dart/lotiq_bridge && dart pub get
+      - name: dart analyze (fatal on warnings)
+        script: cd dart/lotiq_bridge && dart analyze --fatal-warnings
+      - name: dart test
+        script: cd dart/lotiq_bridge && dart test --reporter expanded
+
+  reference-node:
+    name: reference bridge (Node) — offline demo
+    instance_type: linux_x2
+    max_build_duration: 10
+    triggering:
+      events:
+        - push
+        - pull_request
+    scripts:
+      - name: node demo (proves the runner + read-back trap)
+        script: cd reference && node bin/demo.mjs

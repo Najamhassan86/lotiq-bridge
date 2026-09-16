@@ -1,0 +1,17 @@
+name: lotiq_bridge
+description: On-site provisioning bridge for LotIQ cameras — pairs with the backend, runs provisioning jobs against cameras on the LAN, reports back. Pure Dart, no Flutter.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  crypto: ^3.0.3
+  pointycastle: ^3.9.1
+  xml: ^6.5.0
+  http: ^1.2.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^4.0.0
