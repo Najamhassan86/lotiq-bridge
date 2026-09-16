@@ -1,0 +1,30 @@
+# Node
+node_modules/
+npm-debug.log*
+*.log
+
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# Secrets / local
+*.pem
+*.p12
+.env
+.env.*
+fixtures.json
+*.provisioned.csv
+cameras.csv
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,11 @@
+{
+  "name": "lotiq-bridge-reference",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node reference implementation of the LotIQ camera-provisioning bridge. Dependency-free (global fetch); the executable spec the Dart phone app mirrors.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "demo": "node bin/demo.mjs"
+  }
+}
