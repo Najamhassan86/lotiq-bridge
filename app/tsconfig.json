@@ -13,5 +13,6 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"]
+  "comment2": "Scoped to the pure-TS core; the RN layer (App.tsx, src/rnSocket.ts) is type-checked by the Expo toolchain once the app is scaffolded, since it needs react-native types.",
+  "include": ["src/bridge/**/*.ts"]
 }

@@ -20,25 +20,33 @@ verifies. Adding a camera setting is a backend change, not an app release.
 
 ```
 lotiq-bridge/
-├── reference/            Node reference bridge — the executable spec (dependency-free, testable now)
-│   ├── lib/
-│   │   ├── backendClient.mjs   HTTP client for /provision-bridge/* (pair, poll, events, complete)
-│   │   ├── cameraDriver.mjs    the CameraDriver interface + FakeReolink for tests
-│   │   ├── jobRunner.mjs       run one job: login → set password (two-step commit) → apply+verify
-│   │   ├── bridge.mjs          the pair-then-poll loop
-│   │   └── masking.mjs         read-back diff (matches the backend's, wildcard '*' + field masking)
-│   └── bin/demo.mjs            offline demo (fake backend + fake camera)
-└── dart/                 Dart/Flutter bridge for iOS (the phone app) — ports reference/ 1:1
+├── app/                  ★ THE PHONE APP — React Native / Expo (matches the main LotIQ Expo app)
+│   ├── src/bridge/       Pure-TS bridge core (RN + Node compatible) — typechecked + tested in CI
+│   │   ├── crypto.ts         Baichuan crypto (spark-md5 + aes-js) — golden-fixture tested
+│   │   ├── frames.ts         Baichuan wire framing — golden-fixture tested
+│   │   ├── backendClient.ts  HTTP client for /provision-bridge/* (pair, poll, events, complete)
+│   │   ├── jobRunner.ts       run one job: login → password commit → apply+read-back+diff → complete
+│   │   ├── cameraDriver.ts    CameraDriver interface + FakeReolink
+│   │   ├── baichuanClient.ts  Baichuan TCP client (socket-injected) — ⚠ TCP I/O needs bench validation
+│   │   ├── cgi.ts / reolinkDriver.ts  real-camera CGI driver
+│   │   └── *.test.ts + __fixtures__/  Node tests (16) + golden vectors
+│   ├── App.tsx           the one screen (pair code → live progress)
+│   ├── src/rnSocket.ts   react-native-tcp-socket adapter (the only native dependency)
+│   └── app.json          Expo config (iOS local-network Info.plist keys)
+├── reference/            Node reference bridge — the executable spec, proven end-to-end vs staging
+└── dart/                 Dart package — a bench CLI + language-agnostic spec (NOT the phone app)
 ```
 
-## Why a Node reference *and* a Dart app
+See **[app/README.md](app/README.md)** for building the phone app.
 
-The protocol crypto (Baichuan, `md5_modern`, AES-CFB128) is already byte-validated in
-`kunal-lotiq/lotiq-installer`'s Dart core against golden fixtures. What's new here is the **bridge
-orchestration** (pair/poll/run/report) — plain HTTP plus the existing CGI calls. This project proves
-that orchestration in Node against the live backend first (see the e2e below), then the Dart app
-mirrors `reference/lib/*` call-for-call so the phone build is a port of a proven design, not a
-rewrite. The same pattern the installer repo already uses (Python reference → Dart port).
+## Why a TS core, a Node reference, and a Dart CLI
+
+The bridge orchestration (pair/poll/run/report) was proven first in the **Node reference**, end-to-end
+against the deployed staging backend. The phone app is **React Native**, so its core (`app/src/bridge`)
+is a TypeScript port of that proven design, with the Baichuan crypto + framing re-validated
+byte-for-byte against the same golden fixtures (`kunal-lotiq/lotiq-installer`'s `bc_fixtures.py`). The
+**Dart** package is a byte-identical bench CLI / spec, kept for support work. One design, three
+runtimes, each checked against the same fixtures.
 
 ## Run the offline demo
 

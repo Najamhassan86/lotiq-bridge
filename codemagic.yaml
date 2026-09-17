@@ -1,37 +1,49 @@
 # Codemagic CI for the LotIQ bridge.
 #
-# Today: validate the pure-Dart package (analyze + test) on every push, so a broken port of the
-# provisioning logic fails in CI, not on someone's phone. When the Flutter app (dart/lotiq_bridge_app)
-# lands, add an `ios-testflight` workflow modelled on kunal-lotiq/lotiq-installer's codemagic.yaml
-# (App Store Connect key, distribution cert + profile, `xcode-project use-profiles`, `flutter build
-# ipa`, TestFlight publish).
+# `ts-core` is the one that gates correctness today: it type-checks and tests the pure-TS bridge core
+# (crypto vs golden fixtures, Baichuan framing, read-back, job runner) — a broken port fails here, not
+# on a phone. `reference-node` and `dart-package` keep the two reference implementations honest.
+#
+# The iOS TestFlight workflow is added once the Expo app is scaffolded (see README → "Build the app"):
+# it will `expo prebuild`, `pod install`, build the .ipa with the App Store Connect key + distribution
+# profile, and publish to TestFlight — modelled on kunal-lotiq/lotiq-installer's codemagic.yaml.
 workflows:
-  dart-package:
-    name: lotiq_bridge — Dart package (analyze + test)
+  ts-core:
+    name: bridge core (TypeScript) — typecheck + test
     instance_type: linux_x2
-    max_build_duration: 20
-    environment:
-      flutter: stable # provides the Dart SDK
+    max_build_duration: 15
     triggering:
-      events:
-        - push
-        - pull_request
+      events: [push, pull_request]
     scripts:
-      - name: dart pub get
-        script: cd dart/lotiq_bridge && dart pub get
-      - name: dart analyze (fatal on warnings)
-        script: cd dart/lotiq_bridge && dart analyze --fatal-warnings
-      - name: dart test
-        script: cd dart/lotiq_bridge && dart test --reporter expanded
+      - name: install
+        script: cd app && npm ci
+      - name: typecheck
+        script: cd app && npx tsc --noEmit
+      - name: test
+        script: cd app && node --test "src/**/*.test.ts"
 
   reference-node:
     name: reference bridge (Node) — offline demo
     instance_type: linux_x2
     max_build_duration: 10
     triggering:
-      events:
-        - push
-        - pull_request
+      events: [push, pull_request]
     scripts:
       - name: node demo (proves the runner + read-back trap)
         script: cd reference && node bin/demo.mjs
+
+  dart-package:
+    name: lotiq_bridge (Dart bench CLI) — analyze + test
+    instance_type: linux_x2
+    max_build_duration: 20
+    triggering:
+      events: [push, pull_request]
+    environment:
+      flutter: stable # provides the Dart SDK
+    scripts:
+      - name: dart pub get
+        script: cd dart/lotiq_bridge && dart pub get
+      - name: dart analyze
+        script: cd dart/lotiq_bridge && dart analyze --fatal-warnings
+      - name: dart test
+        script: cd dart/lotiq_bridge && dart test

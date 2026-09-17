@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "LotIQ Bridge",
+    "slug": "lotiq-bridge",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "pro.lotiq.bridge",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "LotIQ needs local network access to find and configure cameras on site.",
+        "NSBonjourServices": ["_http._tcp"],
+        "NSAllowsLocalNetworking": true,
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "pro.lotiq.bridge",
+      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE", "ACCESS_WIFI_STATE"]
+    }
+  }
+}
