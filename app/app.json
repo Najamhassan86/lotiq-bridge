@@ -4,7 +4,14 @@
     "slug": "lotiq-bridge",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0B6A73"
+    },
     "ios": {
       "bundleIdentifier": "pro.lotiq.bridge",
       "supportsTablet": false,
@@ -17,7 +24,14 @@
     },
     "android": {
       "package": "pro.lotiq.bridge",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B6A73"
+      },
       "permissions": ["INTERNET", "ACCESS_NETWORK_STATE", "ACCESS_WIFI_STATE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }
