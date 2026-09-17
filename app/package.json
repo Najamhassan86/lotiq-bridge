@@ -2,19 +2,31 @@
   "name": "lotiq-bridge-app",
   "version": "0.1.0",
   "private": true,
+  "main": "expo/AppEntry.js",
   "description": "LotIQ camera-provisioning bridge — React Native (Expo) field app. The bridge core under src/bridge is pure TS (RN + Node compatible); it ports the proven Node reference and is validated against the Baichuan golden fixtures.",
-  "type": "module",
   "scripts": {
-    "test": "node --test \"src/**/*.test.ts\""
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "test": "node --test \"src/bridge/**/*.test.ts\"",
+    "typecheck:core": "tsc -p tsconfig.core.json --noEmit"
   },
   "dependencies": {
+    "expo": "~52.0.0",
+    "expo-keep-awake": "~14.0.1",
+    "expo-status-bar": "~2.0.1",
+    "react": "18.3.1",
+    "react-native": "0.76.5",
+    "react-native-tcp-socket": "^6.2.0",
     "aes-js": "^3.1.2",
     "spark-md5": "^3.0.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.2",
     "@types/aes-js": "^3.1.4",
     "@types/node": "^22.20.3",
+    "@types/react": "~18.3.12",
     "@types/spark-md5": "^3.0.5",
-    "typescript": "^5.6.0"
+    "typescript": "~5.6.3"
   }
 }

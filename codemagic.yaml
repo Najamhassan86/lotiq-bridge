@@ -1,26 +1,29 @@
 # Codemagic CI for the LotIQ bridge.
 #
-# `ts-core` is the one that gates correctness today: it type-checks and tests the pure-TS bridge core
-# (crypto vs golden fixtures, Baichuan framing, read-back, job runner) — a broken port fails here, not
-# on a phone. `reference-node` and `dart-package` keep the two reference implementations honest.
+# `ts-core` gates correctness on every push (typecheck + test the pure-TS core: crypto vs golden
+# fixtures, Baichuan framing, read-back, job runner). `ios-testflight` builds the RN/Expo app and
+# ships it to TestFlight — trigger it manually (or on a tag) once you want a device build.
 #
-# The iOS TestFlight workflow is added once the Expo app is scaffolded (see README → "Build the app"):
-# it will `expo prebuild`, `pod install`, build the .ipa with the App Store Connect key + distribution
-# profile, and publish to TestFlight — modelled on kunal-lotiq/lotiq-installer's codemagic.yaml.
+# Prereqs for ios-testflight (one-time, in Codemagic + Apple):
+#   • An App Store Connect API-key integration named "LotIQ" (Team settings → Integrations) — the
+#     installer app already uses this, so it exists.
+#   • An app record with bundle id `pro.lotiq.bridge` (automatic signing registers the id; create the
+#     App Store Connect app record so TestFlight has somewhere to receive the build).
+#   • Add tester najamhassan202@gmail.com to the TestFlight group.
 workflows:
   ts-core:
     name: bridge core (TypeScript) — typecheck + test
     instance_type: linux_x2
-    max_build_duration: 15
+    max_build_duration: 20
     triggering:
       events: [push, pull_request]
     scripts:
       - name: install
-        script: cd app && npm ci
-      - name: typecheck
-        script: cd app && npx tsc --noEmit
-      - name: test
-        script: cd app && node --test "src/**/*.test.ts"
+        script: cd app && npm install --no-audit --no-fund
+      - name: typecheck core
+        script: cd app && npm run typecheck:core
+      - name: test core
+        script: cd app && npm test
 
   reference-node:
     name: reference bridge (Node) — offline demo
@@ -32,18 +35,56 @@ workflows:
       - name: node demo (proves the runner + read-back trap)
         script: cd reference && node bin/demo.mjs
 
-  dart-package:
-    name: lotiq_bridge (Dart bench CLI) — analyze + test
-    instance_type: linux_x2
-    max_build_duration: 20
-    triggering:
-      events: [push, pull_request]
+  ios-testflight:
+    name: LotIQ Bridge — iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: LotIQ
     environment:
-      flutter: stable # provides the Dart SDK
+      xcode: latest
+      cocoapods: default
+      node: 20
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: pro.lotiq.bridge
+      vars:
+        BUNDLE_ID: "pro.lotiq.bridge"
+    working_directory: app
     scripts:
-      - name: dart pub get
-        script: cd dart/lotiq_bridge && dart pub get
-      - name: dart analyze
-        script: cd dart/lotiq_bridge && dart analyze --fatal-warnings
-      - name: dart test
-        script: cd dart/lotiq_bridge && dart test
+      - name: Core tests first (fail before building if the port broke)
+        script: |
+          npm install --no-audit --no-fund
+          npm run typecheck:core
+          npm test
+      - name: Align Expo deps to the SDK + generate the native iOS project
+        script: |
+          npx expo install --fix
+          npx expo prebuild --platform ios --clean
+      - name: Unique build number (Apple rejects duplicates)
+        script: echo "BUILD_NUMBER=$PROJECT_BUILD_NUMBER" >> $CM_ENV
+      - name: Set up signing on the Xcode project
+        script: xcode-project use-profiles
+      - name: Install CocoaPods (links react-native-tcp-socket)
+        script: |
+          cd ios && pod install && cd ..
+      - name: Build IPA
+        script: |
+          WORKSPACE=$(find ios -maxdepth 1 -name "*.xcworkspace" | head -1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          echo "Building workspace=$WORKSPACE scheme=$SCHEME"
+          xcode-project build-ipa --workspace "$WORKSPACE" --scheme "$SCHEME"
+    artifacts:
+      - app/build/ios/ipa/*.ipa
+      - "**/*.ipa"
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      email:
+        recipients:
+          - najamhassan202@gmail.com
+        notify:
+          success: true
+          failure: true

@@ -1,18 +1,9 @@
 {
-  "comment": "Type-check config for the pure-TS bridge core (src/bridge) + its Node tests. The Expo app build uses Expo's own tsconfig (added when the app is scaffolded); the core src itself uses only web-standard APIs (fetch, TextEncoder) so it runs unchanged in React Native.",
+  "//": "Expo app typecheck (App.tsx + src). Resolves once `expo` is installed (it provides expo/tsconfig.base). The pure-TS core has its own standalone config, tsconfig.core.json, used by CI so the core can be checked without the RN toolchain.",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["node"]
+    "strict": true
   },
-  "comment2": "Scoped to the pure-TS core; the RN layer (App.tsx, src/rnSocket.ts) is type-checked by the Expo toolchain once the app is scaffolded, since it needs react-native types.",
-  "include": ["src/bridge/**/*.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules", "ios", "android"]
 }
