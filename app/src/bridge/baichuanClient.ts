@@ -157,11 +157,10 @@ export class BaichuanClient {
       `<LoginUser version="1.1">\n<userName>${userHash}</userName>\n<password>${passHash}</password>\n<userVer>1</userVer>\n</LoginUser>\n` +
       `<LoginNet version="1.1">\n<type>LAN</type>\n<udpPort>0</udpPort>\n</LoginNet>\n</body>\n`;
     await this.sock.write(loginFrame(xml, this.nextMessId()));
-    const f = await this.readFrameForCmd(1);
-    const reply = this.decryptFrame(f.header, f.headerLen, f.body);
-    if (!/<code>0<\/code>|<rspCode>200<\/rspCode>|LoginUser/i.test(reply)) {
-      throw new Error(`login rejected: ${reply.slice(0, 160)}`);
-    }
+    // The reply frame's status is validated in readFrame (a wrong password comes back 401 and throws).
+    // Some firmware returns DeviceInfo, not LoginUser, in the ack, so trust the status not the body —
+    // this matches the proven bc_prove login, which never inspects the login body.
+    await this.readFrameForCmd(1);
   }
 
   private async sendAes(cmdId: number, xml: string): Promise<string> {
