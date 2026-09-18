@@ -22,6 +22,7 @@
           "_http._tcp"
         ],
         "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
         },
         "ITSAppUsesNonExemptEncryption": false

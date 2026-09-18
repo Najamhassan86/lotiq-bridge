@@ -14,15 +14,15 @@
   "dependencies": {
     "aes-js": "^3.1.2",
     "babel-preset-expo": "~57.0.0",
-    "expo": "^57.0.23",
-    "expo-asset": "~57.0.17",
-    "expo-build-properties": "~57.0.20",
+    "expo": "~57.0.24",
+    "expo-asset": "~57.0.18",
+    "expo-build-properties": "~57.0.21",
     "expo-dev-client": "~57.0.19",
     "expo-keep-awake": "~57.0.2",
     "expo-network": "~57.0.2",
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
-    "expo-updates": "~57.0.22",
+    "expo-updates": "~57.0.23",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-tcp-socket": "^6.4.3",
@@ -40,7 +40,9 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "//": "react-native-tcp-socket is old-arch only; we ship with newArchEnabled:false (app.json expo-build-properties), so this metadata warning is expected and handled.",
-        "exclude": ["react-native-tcp-socket"]
+        "exclude": [
+          "react-native-tcp-socket"
+        ]
       }
     }
   }

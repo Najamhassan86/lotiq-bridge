@@ -43,7 +43,9 @@ export class Cgi {
 
   async loginWorks(): Promise<boolean> {
     try {
-      const r = await this.call('GetDevInfo', {}, 1);
+      // action 0 (value), matching the proven bc_prove `cgi_login_works` — action 1 (schema/range)
+      // can come back non-zero on this getter and make a reachable camera look unreachable.
+      const r = await this.call('GetDevInfo', {});
       return r.code === 0;
     } catch {
       return false;
