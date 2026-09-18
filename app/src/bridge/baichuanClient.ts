@@ -14,7 +14,7 @@
  * can supply a Node `net.Socket` adapter. This keeps the native dependency out of the pure core.
  */
 import { bcXor, deriveAesKey, md5Modern, aesDecrypt } from './crypto.ts';
-import { loginFrame, nonceFrame, aesCommandFrame, HOST_CH_ID } from './frames.ts';
+import { loginFrame, nonceFrame, aesCommandFrame } from './frames.ts';
 
 /** Minimal duplex byte stream the client needs. */
 export interface BaichuanSocket {
@@ -72,36 +72,76 @@ export class BaichuanClient {
     return (this.buf[off] | (this.buf[off + 1] << 8) | (this.buf[off + 2] << 16) | (this.buf[off + 3] << 24)) >>> 0;
   }
 
-  /** Read one full frame off the stream: header (20/24 bytes) + body of mess_len. Returns the body. */
-  private async readFrame(timeoutMs = 10000): Promise<{ body: Uint8Array; chId: number; isXor: boolean }> {
+  /**
+   * Read one full frame off the stream and return its header + body. The header length is decided by
+   * the message class at bytes 18–19 (bc_prove `_recv_frame`): class 1466 → 20-byte header (the nonce
+   * reply), everything else (1464 / 0000) → 24-byte. For a 24-byte frame, bytes 16–17 carry the status.
+   *
+   * Reading these class bytes big-endian is the fix for the "timeout reading Baichuan frame" bug: the
+   * old code compared them little-endian, never matched 1466, always assumed a 24-byte header, and so
+   * waited forever for 4 bytes past the end of a 20-byte nonce reply.
+   */
+  private async readFrame(timeoutMs = 10000): Promise<{ cmdId: number; headerLen: number; header: Uint8Array; body: Uint8Array }> {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
-      // Need at least the fixed part of the header to know the class + length.
-      if (this.buf.length >= 20 && this.rdU32(0) === MAGIC) {
-        const messLen = this.rdU32(8);
-        const chId = this.buf[12];
-        // class marker sits at bytes 16..19; 0x1465 => 20-byte header (nonce/xor), else 24-byte.
-        const classHi = this.buf[18] | (this.buf[19] << 8);
-        const is1465 = classHi === 0x1465 || classHi === 0x1466;
-        const headerLen = is1465 ? 20 : 24;
-        if (this.buf.length >= headerLen + messLen) {
-          const body = this.buf.slice(headerLen, headerLen + messLen);
-          this.buf = this.buf.slice(headerLen + messLen);
-          return { body, chId, isXor: is1465 };
+      if (this.buf.length >= 4 && this.rdU32(0) !== MAGIC) throw new Error('Baichuan framing lost (bad magic)');
+      if (this.buf.length >= 20) {
+        const cmdId = this.rdU32(4);
+        const lenBody = this.rdU32(8);
+        const cls = (this.buf[18] << 8) | this.buf[19]; // 0x1466 (20-byte) | 0x1464 | 0x0000 (24-byte)
+        const headerLen = cls === 0x1466 ? 20 : 24;
+        if (this.buf.length >= headerLen + lenBody) {
+          if (headerLen === 24) {
+            const status = this.buf[16] | (this.buf[17] << 8);
+            if (status && status !== 200 && status !== 201 && status !== 300) {
+              this.buf = this.buf.slice(headerLen + lenBody);
+              throw new Error(status === 401 ? 'Baichuan 401 — wrong camera password' : `Baichuan status ${status}`);
+            }
+          }
+          const header = this.buf.slice(0, headerLen);
+          const body = this.buf.slice(headerLen, headerLen + lenBody);
+          this.buf = this.buf.slice(headerLen + lenBody);
+          return { cmdId, headerLen, header, body };
         }
       }
       if (Date.now() > deadline) throw new Error('timeout reading Baichuan frame');
       const chunk = await this.sock.read(Math.max(1, deadline - Date.now()));
       if (chunk == null) throw new Error('socket closed while reading frame');
-      this.append(chunk);
+      if (chunk.length) this.append(chunk);
     }
   }
 
-  /** Nonce handshake: send the class-1465 request, decrypt the reply with BC-XOR at the ch_id offset. */
+  /** Read frames until one matches `wantCmd`, skipping the camera's unsolicited push frames. */
+  private async readFrameForCmd(wantCmd: number): Promise<{ cmdId: number; headerLen: number; header: Uint8Array; body: Uint8Array }> {
+    for (;;) {
+      const f = await this.readFrame();
+      if (f.cmdId === wantCmd) return f;
+    }
+  }
+
+  /** Decrypt a frame body per bc_prove `_decrypt`: BC-XOR for the 20-byte reply, plaintext, or AES. */
+  private decryptFrame(header: Uint8Array, headerLen: number, body: Uint8Array): string {
+    if (!body.length) return '';
+    const encOffset = header[12];
+    const encType = (header[16] << 8) | header[17];
+    const dec = new TextDecoder();
+    let out: string;
+    if (headerLen === 20 && (encType === 0x01dd || encType === 0x12dd)) out = dec.decode(bcXor(body, encOffset));
+    else if (encType === 0x00dd) out = dec.decode(body);
+    else out = dec.decode(this.aesKey ? aesDecrypt(this.aesKey, body) : body);
+    // Fallback: if it didn't decode to XML, try BC-XOR (matches the reference's belt-and-braces).
+    if (!out.startsWith('<?xml')) {
+      const alt = dec.decode(bcXor(body, encOffset));
+      if (alt.startsWith('<?xml')) return alt;
+    }
+    return out;
+  }
+
+  /** Nonce handshake: send the class-1465 request, decrypt the reply. */
   async getNonce(): Promise<string> {
     await this.sock.write(nonceFrame(this.nextMessId()));
-    const { body, chId } = await this.readFrame();
-    const xml = new TextDecoder().decode(bcXor(body, chId || HOST_CH_ID));
+    const f = await this.readFrameForCmd(1);
+    const xml = this.decryptFrame(f.header, f.headerLen, f.body);
     const m = xml.match(/<nonce>([^<]+)<\/nonce>/);
     if (!m) throw new Error('no nonce in response');
     return m[1];
@@ -113,12 +153,12 @@ export class BaichuanClient {
     const passHash = md5Modern(this.password + nonce);
     this.aesKey = deriveAesKey(nonce, this.password);
     const xml =
-      `<?xml version="1.0" encoding="UTF-8" ?>\n` +
-      `<body><LoginUser><userName>${userHash}</userName><password>${passHash}</password>` +
-      `<userVer>1</userVer></LoginUser><LoginNet><type>LAN</type><udpPort>0</udpPort></LoginNet></body>\n`;
+      `<?xml version="1.0" encoding="UTF-8" ?>\n<body>\n` +
+      `<LoginUser version="1.1">\n<userName>${userHash}</userName>\n<password>${passHash}</password>\n<userVer>1</userVer>\n</LoginUser>\n` +
+      `<LoginNet version="1.1">\n<type>LAN</type>\n<udpPort>0</udpPort>\n</LoginNet>\n</body>\n`;
     await this.sock.write(loginFrame(xml, this.nextMessId()));
-    const { body } = await this.readFrame();
-    const reply = new TextDecoder().decode(aesDecrypt(this.aesKey, body));
+    const f = await this.readFrameForCmd(1);
+    const reply = this.decryptFrame(f.header, f.headerLen, f.body);
     if (!/<code>0<\/code>|<rspCode>200<\/rspCode>|LoginUser/i.test(reply)) {
       throw new Error(`login rejected: ${reply.slice(0, 160)}`);
     }
@@ -127,22 +167,26 @@ export class BaichuanClient {
   private async sendAes(cmdId: number, xml: string): Promise<string> {
     if (!this.aesKey) throw new Error('not logged in');
     await this.sock.write(aesCommandFrame(cmdId, xml, this.aesKey, this.nextMessId()));
-    const { body } = await this.readFrame();
-    return new TextDecoder().decode(aesDecrypt(this.aesKey, body));
+    const f = await this.readFrameForCmd(cmdId);
+    return this.decryptFrame(f.header, f.headerLen, f.body);
   }
 
-  /** cmd 114 — the stable device UID. */
+  /** cmd 114 — the stable device UID (best-effort). */
   async getUid(): Promise<string | null> {
     const reply = await this.sendAes(114, `<?xml version="1.0" encoding="UTF-8" ?>\n<body></body>\n`);
     const m = reply.match(/<uid>([^<]+)<\/uid>/);
     return m ? m[1] : null;
   }
 
-  /** cmd 36 — enable a service port (e.g. http) so the CGI API becomes reachable. */
+  /**
+   * cmd 36 — enable a service port so the CGI API becomes reachable. Body matches bc_prove `set_port`:
+   * `<HttpPort version="1.1"><enable>1</enable></HttpPort>` (NOT the old `<PortInfo><httpEnable>` form,
+   * which the camera silently ignored).
+   */
   async setPortEnabled(name: string, enable: boolean): Promise<void> {
+    const tag = name.charAt(0).toUpperCase() + name.slice(1) + 'Port';
     const xml =
-      `<?xml version="1.0" encoding="UTF-8" ?>\n` +
-      `<body><PortInfo><${name}Enable>${enable ? 1 : 0}</${name}Enable></PortInfo></body>\n`;
+      `<?xml version="1.0" encoding="UTF-8" ?>\n<body><${tag} version="1.1"><enable>${enable ? 1 : 0}</enable></${tag}></body>`;
     await this.sendAes(36, xml);
   }
 }

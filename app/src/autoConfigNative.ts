@@ -55,15 +55,15 @@ export async function autoConfigureNative({
     await bc.connect();
     await bc.login();
     log('✓ camera login (Baichuan)');
+    await bc.setPortEnabled('http', true);
+    httpOpenedVia = 'baichuan';
+    log('✓ HTTP port enabled on camera');
     try {
       uid = await bc.getUid();
       if (uid) log(`  UID ${uid}`);
     } catch {
-      /* UID is best-effort */
+      /* UID is best-effort — HTTP is already open */
     }
-    await bc.setPortEnabled('http', true);
-    httpOpenedVia = 'baichuan';
-    log('✓ HTTP port enabled on camera');
     await bc.close();
   } catch (e) {
     log(`Baichuan step skipped (${e instanceof Error ? e.message : String(e)}); trying HTTP directly…`);
