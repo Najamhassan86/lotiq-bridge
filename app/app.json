@@ -2,23 +2,28 @@
   "expo": {
     "name": "LotIQ Bridge",
     "slug": "lotiq-bridge",
+    "owner": "sova-vis-team",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "assetBundlePatterns": ["**/*"],
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#0B6A73"
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     },
     "ios": {
       "bundleIdentifier": "pro.lotiq.bridge",
       "supportsTablet": false,
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "LotIQ needs local network access to find and configure cameras on site.",
-        "NSBonjourServices": ["_http._tcp"],
-        "NSAllowsLocalNetworking": true,
+        "NSBonjourServices": [
+          "_http._tcp"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -28,10 +33,46 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B6A73"
       },
-      "permissions": ["INTERNET", "ACCESS_NETWORK_STATE", "ACCESS_WIFI_STATE"]
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#0B6A73"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "newArchEnabled": false
+          },
+          "ios": {
+            "newArchEnabled": false
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4a3b4618-4ef3-45f8-b8e8-2e9b155e63a9"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4a3b4618-4ef3-45f8-b8e8-2e9b155e63a9"
     }
   }
 }

@@ -12,21 +12,36 @@
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit"
   },
   "dependencies": {
-    "expo": "~52.0.0",
-    "expo-keep-awake": "~14.0.1",
-    "expo-status-bar": "~2.0.1",
-    "react": "18.3.1",
-    "react-native": "0.76.5",
-    "react-native-tcp-socket": "^6.2.0",
     "aes-js": "^3.1.2",
+    "babel-preset-expo": "~57.0.0",
+    "expo": "^57.0.23",
+    "expo-asset": "~57.0.17",
+    "expo-build-properties": "~57.0.20",
+    "expo-dev-client": "~57.0.19",
+    "expo-keep-awake": "~57.0.2",
+    "expo-network": "~57.0.2",
+    "expo-splash-screen": "~57.0.9",
+    "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.22",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-tcp-socket": "^6.4.3",
     "spark-md5": "^3.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/aes-js": "^3.1.4",
     "@types/node": "^22.20.3",
-    "@types/react": "~18.3.12",
+    "@types/react": "~19.2.4",
     "@types/spark-md5": "^3.0.5",
-    "typescript": "~5.6.3"
+    "typescript": "~6.0.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "//": "react-native-tcp-socket is old-arch only; we ship with newArchEnabled:false (app.json expo-build-properties), so this metadata warning is expected and handled.",
+        "exclude": ["react-native-tcp-socket"]
+      }
+    }
   }
 }

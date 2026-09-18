@@ -2,8 +2,12 @@
   "//": "Expo app typecheck (App.tsx + src). Resolves once `expo` is installed (it provides expo/tsconfig.base). The pure-TS core has its own standalone config, tsconfig.core.json, used by CI so the core can be checked without the RN toolchain.",
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules", "ios", "android"]
+  "exclude": ["node_modules", "ios", "android", "**/*.test.ts"]
 }

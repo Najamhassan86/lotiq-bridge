@@ -9,8 +9,8 @@
  * NOT imported by any test — it only runs on device. `import TcpSocket from 'react-native-tcp-socket'`
  * resolves once the dependency is installed during app scaffolding.
  */
-// @ts-expect-error — resolved after `expo install react-native-tcp-socket`
 import TcpSocket from 'react-native-tcp-socket';
+import { Buffer } from 'buffer';
 import type { BaichuanSocket } from './bridge/baichuanClient.ts';
 
 /** A BaichuanSocket over react-native-tcp-socket, buffering inbound chunks for the frame reader. */

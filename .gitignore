@@ -40,3 +40,6 @@ pubspec.lock
 app/ios/
 app/android/
 app/expo-env.d.ts
+
+# Expo export output (`expo export` → app/dist), a build artifact, not committed
+app/dist/
